@@ -181,7 +181,7 @@ def find_the_right_pic(small_image, large_image):
 
     # We want the minimum squared difference
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
+    print('min - {} max - {}, rate - {}'.format(min_val,max_val,round(max_val/min_val,2)))
     # Draw the rectangle:
     # Extract the coordinates of our best match
     MPx,MPy = min_loc
@@ -193,30 +193,42 @@ def find_the_right_pic(small_image, large_image):
     cv2.rectangle(large_image, (MPx,MPy),(MPx+tcols,MPy+trows),(0,0,255),2)
     return large_image, min_val, max_val
 
+
+def find_accuracy():
+    pass
+
+
 def ex3_1():
-    ex3_pic_path = 'pictures/q3/00031_1.png'
+    ex3_pic_path = 'pictures/q3/00031_3.png'
     img = cv2.imread(ex3_pic_path)
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     _,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY)
-    x,y,w,h  = clearn_frame(thresh)
+    x,y,w,h  = clean_frame(thresh)
     crop = img[y:y+h,x:x+w]
-    crop = cv2.medianBlur(crop,3)
-    _,small_image = cv2.threshold(crop,140,255,cv2.THRESH_BINARY)
+    crop = img[90:195,90:195]
+    plt.subplot(111),plt.imshow(crop)
+    plt.show()
+    # small_image = crop[30:250,0:250]
+    small_image = cv2.medianBlur(crop,3)
+    # _,small_image = cv2.threshold(small_image,120,255,cv2.THRESH_BINARY)
+    cv2.imshow("crop", small_image)
+    cv2.waitKey()
     pic, max_val, min_val = None, 0.5, 0.5
     for i in range(31,46):
         # Read the images from the file
         large_image = cv2.imread('pictures/q2/000{}.png'.format(i))
+        # large_image = cv2.medianBlur(large_image,5)
+
+        if small_image.shape[1] > large_image.shape[1]:
+            small_image = small_image[0:small_image.shape[0], 0:large_image.shape[1]]
         found_img, min_v, max_v = find_the_right_pic(small_image,large_image)
-        if min_v < min_val and max_v > max_val:
-            max_val = max_v
-            min_val = min_v
-            pic = found_img
-    if pic is not None:
-        cv2.imshow("found", pic)
-        cv2.waitKey()
+        # find_accuracy()
+        # if found_img is not None:
+        #     cv2.imshow("found", found_img)
+        #     cv2.waitKey()
 
 
-def clearn_frame(thresh):
+def clean_frame(thresh):
     contours,hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     cnt = contours[0]
     return cv2.boundingRect(cnt)
@@ -224,28 +236,9 @@ def clearn_frame(thresh):
 
 
 def ex3_2():
-    ex3_pic_path = 'pictures/q3/00031_2.png'
-    img = cv2.imread(ex3_pic_path)
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    cv2.imshow("found", gray)
-    cv2.waitKey()
-    _,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY)
-    x,y,w,h  = clearn_frame(thresh)
-    crop = img[y:y+h,x:x+w]
-    crop = cv2.medianBlur(crop,3)
-    _,small_image = cv2.threshold(crop,140,255,cv2.THRESH_BINARY)
-    pic, max_val, min_val = None, 0.5, 0.5
-    for i in range(31,46):
-        # Read the images from the file
-        large_image = cv2.imread('pictures/q2/000{}.png'.format(i))
-        found_img, min_v, max_v = find_the_right_pic(small_image,large_image)
-        if min_v < min_val and max_v > max_val:
-            max_val = max_v
-            min_val = min_v
-            pic = found_img
-    if pic is not None:
-        cv2.imshow("found", pic)
-        cv2.waitKey()
+   pass
+
+
 def activate_ex3():
     ex3_1()
 
