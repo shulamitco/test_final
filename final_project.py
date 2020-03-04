@@ -1,11 +1,6 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-# import argparse
-# from PIL import Image, ImageDraw
-# from math import sqrt, pi, cos, sin, atan2
-# from collections import defaultdict
-# from PIL import Image, ImageChops
 
 def crop_imges_1(img):
     org = img.copy()
@@ -62,6 +57,7 @@ def crop_imges_3(img):
     gray = cv2.erode(gray, kernel, iterations=40)
     _, gray = cv2.threshold(gray,20,255,cv2.THRESH_BINARY)
     dst = cv2.cornerHarris(gray,10,3,0.1)
+    gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
     list_tf = [dst>0.02*dst.max()]
     points_indexes = np.argwhere(list_tf)
     y, x = np.swapaxes(points_indexes,0,1)[1],np.swapaxes(points_indexes,0,1)[2]
@@ -181,7 +177,6 @@ def find_the_right_pic(small_image, large_image):
 
     # We want the minimum squared difference
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-    print('min - {} max - {}, rate - {}'.format(min_val,max_val,round(max_val/min_val,2)))
     # Draw the rectangle:
     # Extract the coordinates of our best match
     MPx,MPy = min_loc
@@ -191,61 +186,78 @@ def find_the_right_pic(small_image, large_image):
 
     # Step 3: Draw the rectangle on large_image
     cv2.rectangle(large_image, (MPx,MPy),(MPx+tcols,MPy+trows),(0,0,255),2)
-    return large_image, min_val, max_val
+    return large_image, round(max_val/min_val,2)
 
 
 def find_accuracy():
     pass
 
 
-def ex3_1():
-    ex3_pic_path = 'pictures/q3/00031_3.png'
-    img = cv2.imread(ex3_pic_path)
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    _,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY)
-    x,y,w,h  = clean_frame(thresh)
-    crop = img[y:y+h,x:x+w]
-    crop = img[90:195,90:195]
-    plt.subplot(111),plt.imshow(crop)
-    plt.show()
-    # small_image = crop[30:250,0:250]
-    small_image = cv2.medianBlur(crop,3)
-    # _,small_image = cv2.threshold(small_image,120,255,cv2.THRESH_BINARY)
-    cv2.imshow("crop", small_image)
-    cv2.waitKey()
-    pic, max_val, min_val = None, 0.5, 0.5
+def find_image_in_db( small_image):
+    pic, rate = None, 0
     for i in range(31,46):
         # Read the images from the file
         large_image = cv2.imread('pictures/q2/000{}.png'.format(i))
-        # large_image = cv2.medianBlur(large_image,5)
-
         if small_image.shape[1] > large_image.shape[1]:
             small_image = small_image[0:small_image.shape[0], 0:large_image.shape[1]]
-        found_img, min_v, max_v = find_the_right_pic(small_image,large_image)
-        # find_accuracy()
-        # if found_img is not None:
-        #     cv2.imshow("found", found_img)
-        #     cv2.waitKey()
+        found_img, rate_val = find_the_right_pic(small_image,large_image)
+        if rate_val > rate:
+            pic = found_img
+            rate = rate_val
+    if pic is not None:
+        return pic
 
 
 def clean_frame(thresh):
-    contours,hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    contours,hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
     cnt = contours[0]
     return cv2.boundingRect(cnt)
 
 
+def clean_pic(i, img):
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    _,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY)
+    x,y,w,h = clean_frame(thresh)
+    crop = img[y:y+h,x:x+w]
+    img = cv2.medianBlur(crop,3)
 
-def ex3_2():
-   pass
+    if i == 2:
+       img = img[35:195, 40:170]
+    elif i == 3:
+       img = img[90:195, 85:195]
 
+    elif i == 4:
+       img = img[25:195, 70:195]
+    elif i == 5:
+       img = img[125:195, 70:195]
+    cv2.imshow("c",img)
+    cv2.waitKey()
+    return img
 
 def activate_ex3():
-    ex3_1()
+    small_images = []
+    large_images = []
+    for i in range(1,6):
+        path = 'pictures/q3/00031_{}.png'.format(i)
+        small_img = cv2.imread(path)
+        small_img = clean_pic(i, small_img)
+        large_img = find_image_in_db(small_img)
+        small_images.append(small_img)
+        large_images.append(large_img)
+        cv2.imshow("large", large_img)
+        cv2.waitKey()
+
+
+def activate_ex4():
+    pass
+
 
 if __name__ == '__main__':
-    # activate_ex1()
-    # activate_ex2()
+    activate_ex1()
+    activate_ex2()
     activate_ex3()
+    activate_ex4()
+
 
 
 
