@@ -48,26 +48,7 @@ def crop_imges_2(img):
     return crop_img
 
 def crop_imges_3(img):
-    org = img.copy()
-    kernel = np.ones((5,5),np.uint8)
-    img = cv2.medianBlur(img,5)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = cv2.erode(gray, kernel, iterations=20)
-    gray = cv2.dilate(gray, kernel, iterations=40)
-    gray = cv2.erode(gray, kernel, iterations=40)
-    _, gray = cv2.threshold(gray,20,255,cv2.THRESH_BINARY)
-    dst = cv2.cornerHarris(gray,10,3,0.1)
-    gray = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-    list_tf = [dst>0.02*dst.max()]
-    points_indexes = np.argwhere(list_tf)
-    y, x = np.swapaxes(points_indexes,0,1)[1],np.swapaxes(points_indexes,0,1)[2]
-    max_y = y.max()
-    x_size = img.shape[1]
-    y_index = np.where(y == max_y)
-    x = (x[y_index]).max()
-    crop_img = org[0:max_y, x:x_size]
-    return crop_img
-
+   it
 def draw_points(img):
     img = img.copy()
     kernel = np.ones((5,5),np.uint8)
