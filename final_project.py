@@ -205,54 +205,39 @@ def find_accuracy():
 
 
 def find_image_in_db(img2):
-    pic, rate = None, 0
-    list_kp1 = []
-    list_kp2 = []
-    max_p = 500
-    parameter = 0
-    for i in range(1,1177):
+
+    max_p = 0
+    parameters = []
+    for i in range(1,1176):
         # Read the images from the file
         img1 = cv2.imread('pictures/DB/ ({}).png'.format(i))
-        # ORB Detector
-        orb = cv2.ORB_create()
-        kp1, des1 = orb.detectAndCompute(img1, None)
-        kp2, des2 = orb.detectAndCompute(img2, None)
-        # Brute Force Matching
-        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-        matches = bf.match(des1, des2)
-        matches = sorted(matches, key = lambda x:x.distance)
-        matching_result = cv2.drawMatches(img1, kp1, img2, kp2, matches[:20], None, flags=2)
-        matches = matches[:20]
-        length = 19 if len(matches)>20 else len(matches)-1
-        list_kp1 = []
-        list_kp2 = []
 
+        # Initiate SIFT detector
+        sift =  cv2.ORB_create()
 
-        for mat in matches:
-            img1_idx = mat.queryIdx
-            img2_idx = mat.trainIdx
-            (x1, y1) = kp1[img1_idx].pt
-            (x2, y2) = kp2[img2_idx].pt
-            list_kp1.append((x1, y1))
-            list_kp2.append((x2, y2))
-        list_kp1 = sorted(list_kp1)
-        list_kp2 = sorted(list_kp2)
-        dis1 = []
-        dis2 = []
-        dis3 = []
+        # find the keypoints and descriptors with SIFT
+        kp1, des1 = sift.detectAndCompute(img1,None)
+        kp2, des2 = sift.detectAndCompute(img2,None)
 
-        for j in range(length):
-            d1 = distance(list_kp1[j], list_kp1[j+1])
-            d2 = distance(list_kp2[j], list_kp2[j+1])
-            d3 = abs(d2-d1)
-            dis1.append(d1)
-            dis2.append(d2)
-            dis3.append(d3)
+        # BFMatcher with default params
+        bf = cv2.BFMatcher()
+        matches = bf.knnMatch(des1,des2, k=3)
 
-        if max_p > max(dis3):
-            max_p = max(dis3)
-            parameter = i
-            print("max_p{} param{}".format(max_p,parameter))
+        # Apply ratio test
+        good = []
+        for m,n in matches:
+            if m.distance < 0.75*n.distance:
+                good.append([m])
+
+        # cv2.drawMatchesKnn expects list of lists as matches.
+        img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,None,flags=2)
+        # print("len{}, index{}".format(len(good),i))
+        if len(good) >= max_p:
+            temp = [i, len(good)]
+            parameters.append(temp)
+    parameters = sorted(parameters, key = lambda x:x[1])
+    parameters = parameters[-10:]
+    print(parameters)
         # cv2.imshow("Img1", img1)
         # cv2.imshow("Img2", img2)
         # plt.subplot(1,3,1), plt.imshow(img1)
@@ -280,24 +265,14 @@ def clean_pic(i, img):
     x,y,w,h = clean_frame(thresh)
     crop = img[y:y+h,x:x+w]
     img = cv2.medianBlur(crop,3)
-
-    if i == 2:
-       img = img[35:195, 40:170]
-    elif i == 3:
-       img = img[90:195, 85:195]
-
-    elif i == 4:
-       img = img[25:195, 70:195]
-    elif i == 5:
-       img = img[125:195, 70:195]
-    cv2.imshow("c",img)
+    cv2.imshow("n", img)
     cv2.waitKey()
     return img
 
 def activate_ex3():
     small_images = []
     large_images = []
-    for i in range(3,6):
+    for i in range(1,6):
         path = 'pictures/q3/00031_{}.png'.format(i)
         small_img = cv2.imread(path)
         small_img = clean_pic(i, small_img)
