@@ -1,6 +1,17 @@
 import cv2
+import imagehash
 import numpy as np
+from PIL import Image
 from matplotlib import pyplot as plt
+from math import hypot
+from itertools import combinations
+
+
+def distance(p1,p2):
+    """Euclidean distance between two points."""
+    x1,y1 = p1
+    x2,y2 = p2
+    return hypot(x2 - x1, y2 - y1)
 
 def crop_imges_1(img):
     org = img.copy()
@@ -193,19 +204,68 @@ def find_accuracy():
     pass
 
 
-def find_image_in_db( small_image):
+def find_image_in_db(img2):
     pic, rate = None, 0
-    for i in range(31,46):
+    list_kp1 = []
+    list_kp2 = []
+    max_p = 500
+    parameter = 0
+    for i in range(1,1177):
         # Read the images from the file
-        large_image = cv2.imread('pictures/q2/000{}.png'.format(i))
-        if small_image.shape[1] > large_image.shape[1]:
-            small_image = small_image[0:small_image.shape[0], 0:large_image.shape[1]]
-        found_img, rate_val = find_the_right_pic(small_image,large_image)
-        if rate_val > rate:
-            pic = found_img
-            rate = rate_val
-    if pic is not None:
-        return pic
+        img1 = cv2.imread('pictures/DB/ ({}).png'.format(i))
+        # ORB Detector
+        orb = cv2.ORB_create()
+        kp1, des1 = orb.detectAndCompute(img1, None)
+        kp2, des2 = orb.detectAndCompute(img2, None)
+        # Brute Force Matching
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = bf.match(des1, des2)
+        matches = sorted(matches, key = lambda x:x.distance)
+        matching_result = cv2.drawMatches(img1, kp1, img2, kp2, matches[:20], None, flags=2)
+        matches = matches[:20]
+        length = 19 if len(matches)>20 else len(matches)-1
+        list_kp1 = []
+        list_kp2 = []
+
+
+        for mat in matches:
+            img1_idx = mat.queryIdx
+            img2_idx = mat.trainIdx
+            (x1, y1) = kp1[img1_idx].pt
+            (x2, y2) = kp2[img2_idx].pt
+            list_kp1.append((x1, y1))
+            list_kp2.append((x2, y2))
+        list_kp1 = sorted(list_kp1)
+        list_kp2 = sorted(list_kp2)
+        dis1 = []
+        dis2 = []
+        dis3 = []
+
+        for j in range(length):
+            d1 = distance(list_kp1[j], list_kp1[j+1])
+            d2 = distance(list_kp2[j], list_kp2[j+1])
+            d3 = abs(d2-d1)
+            dis1.append(d1)
+            dis2.append(d2)
+            dis3.append(d3)
+
+        if max_p > max(dis3):
+            max_p = max(dis3)
+            parameter = i
+            print("max_p{} param{}".format(max_p,parameter))
+        # cv2.imshow("Img1", img1)
+        # cv2.imshow("Img2", img2)
+        # plt.subplot(1,3,1), plt.imshow(img1)
+        # plt.xticks([]),plt.yticks([])
+        #
+        # plt.subplot(1,3,2), plt.imshow(img2)
+        # plt.xticks([]),plt.yticks([])
+        #
+        # plt.subplot(1,3,3), plt.imshow(matching_result)
+        # plt.xticks([]),plt.yticks([])
+        # plt.show()
+
+
 
 
 def clean_frame(thresh):
@@ -237,15 +297,15 @@ def clean_pic(i, img):
 def activate_ex3():
     small_images = []
     large_images = []
-    for i in range(1,6):
+    for i in range(3,6):
         path = 'pictures/q3/00031_{}.png'.format(i)
         small_img = cv2.imread(path)
         small_img = clean_pic(i, small_img)
         large_img = find_image_in_db(small_img)
-        small_images.append(small_img)
-        large_images.append(large_img)
-        cv2.imshow("large", large_img)
-        cv2.waitKey()
+        # small_images.append(path)
+        # large_images.append(large_img)
+        # cv2.imshow("large", large_img)
+        # cv2.waitKey()
 
 
 def activate_ex4():
@@ -253,10 +313,10 @@ def activate_ex4():
 
 
 if __name__ == '__main__':
-    activate_ex1()
-    activate_ex2()
+    # activate_ex1()
+    # activate_ex2()
     activate_ex3()
-    activate_ex4()
+    # activate_ex4()
 
 
 
