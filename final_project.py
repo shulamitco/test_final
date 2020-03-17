@@ -225,7 +225,7 @@ def find_image_in_db(img2):
 
         # Apply ratio test
         good = []
-        for m,n in matches:
+        for m,n,_ in matches:
             if m.distance < 0.75*n.distance:
                 good.append([m])
 
@@ -267,6 +267,15 @@ def clean_pic(i, img):
     img = cv2.medianBlur(crop,3)
     cv2.imshow("n", img)
     cv2.waitKey()
+    if i == 2:
+       img = img[35:195, 40:170]
+    elif i == 3:
+       img = img[90:195, 85:195]
+
+    elif i == 4:
+       img = img[25:195, 70:195]
+    elif i == 5:
+       img = img[125:195, 70:195]
     return img
 
 def activate_ex3():
