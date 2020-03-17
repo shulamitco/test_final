@@ -208,35 +208,52 @@ def find_image_in_db(img2):
 
     max_p = 0
     parameters = []
-    for i in range(1,1176):
+    for j in range(1,1176):
         # Read the images from the file
-        img1 = cv2.imread('pictures/DB/ ({}).png'.format(i))
+        img1 = cv2.imread('pictures/DB/ ({}).png'.format(j))
 
         # Initiate SIFT detector
         sift =  cv2.ORB_create()
 
+        # BFMatcher with default params
+        bf = cv2.BFMatcher()
         # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1,None)
         kp2, des2 = sift.detectAndCompute(img2,None)
 
-        # BFMatcher with default params
-        bf = cv2.BFMatcher()
-        matches = bf.knnMatch(des1,des2, k=3)
+        index_params= dict(algorithm = 6,
+                     table_number = 6,
+                     key_size = 12,
+                     multi_probe_level = 1)
 
-        # Apply ratio test
+        search_params = dict(checks=500)   # or pass empty dictionary
+
+        flann = cv2.FlannBasedMatcher(index_params,search_params)
+        matches = flann.knnMatch(des1,des2,2)
+
         good = []
-        for m,n,_ in matches:
-            if m.distance < 0.75*n.distance:
-                good.append([m])
+        # ratio test as per Lowe's paper
+        for m in matches:
+            if len(m) > 0 and m[0].distance < 0.7*m[-1].distance:
+                good.append(m[0])
+        if len(parameters) < 3:
+            parameters.append([len(good), j])
+        else:
+            parameters = sorted(parameters, key = lambda x:x[0])
+            if parameters[0][0] < len(good):
+                parameters[0] = [len(good), j]
 
-        # cv2.drawMatchesKnn expects list of lists as matches.
-        img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,None,flags=2)
-        # print("len{}, index{}".format(len(good),i))
-        if len(good) >= max_p:
-            temp = [i, len(good)]
-            parameters.append(temp)
-    parameters = sorted(parameters, key = lambda x:x[1])
-    parameters = parameters[-10:]
+        # print(size)
+
+
+        # draw_params = dict(matchColor = (0,255,0),
+        #                    singlePointColor = (255,0,0),
+        #                    matchesMask = matchesMask,
+        #                    flags = 0)
+        #
+        # img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,matches,None,**draw_params)
+
+        # plt.imshow(img3,),plt.show()
     print(parameters)
         # cv2.imshow("Img1", img1)
         # cv2.imshow("Img2", img2)
@@ -265,31 +282,39 @@ def clean_pic(i, img):
     x,y,w,h = clean_frame(thresh)
     crop = img[y:y+h,x:x+w]
     img = cv2.medianBlur(crop,3)
+    kernel = np.ones((3,3),np.uint8)
+    if i == 2:
+        img = img[35:195, 40:170]
+    elif i == 4:
+        # img = img[25:195, 70:195]
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = cv2.erode(gray, kernel, iterations=1)
+    elif i == 5:
+        scale_percent = 60
+        width = int(img.shape[1] * scale_percent / 100)
+        height = int(img.shape[0] * scale_percent / 100)
+        dim = (width, height)
+        # resize image
+        img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+
+        # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # img = cv2.dilate(gray, kernel, iterations=1)
     cv2.imshow("n", img)
     cv2.waitKey()
-    if i == 2:
-       img = img[35:195, 40:170]
-    elif i == 3:
-       img = img[90:195, 85:195]
-
-    elif i == 4:
-       img = img[25:195, 70:195]
-    elif i == 5:
-       img = img[125:195, 70:195]
     return img
 
 def activate_ex3():
     small_images = []
     large_images = []
-    for i in range(1,6):
-        path = 'pictures/q3/00031_{}.png'.format(i)
-        small_img = cv2.imread(path)
-        small_img = clean_pic(i, small_img)
-        large_img = find_image_in_db(small_img)
-        # small_images.append(path)
-        # large_images.append(large_img)
-        # cv2.imshow("large", large_img)
-        # cv2.waitKey()
+    # for i in range(1,6):
+    path = 'pictures/q3/00031_5.png'
+    small_img = cv2.imread(path)
+    small_img = clean_pic(5, small_img)
+    large_img = find_image_in_db(small_img)
+    # small_images.append(path)
+    # large_images.append(large_img)
+    # cv2.imshow("large", large_img)
+    # cv2.waitKey()
 
 
 def activate_ex4():
