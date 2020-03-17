@@ -208,52 +208,39 @@ def find_image_in_db(img2):
 
     max_p = 0
     parameters = []
+    sift =  cv2.ORB_create()
+    bf = cv2.BFMatcher()
+    kp2, des2 = sift.detectAndCompute(img2,None)
+    index_params= dict(algorithm = 6,
+                             table_number = 6,
+                             key_size = 12,
+                             multi_probe_level = 1)
+
+    search_params = dict(checks=500)   # or pass empty dictionary
+
+    flann = cv2.FlannBasedMatcher(index_params,search_params)
+
     for j in range(1,1176):
+
         # Read the images from the file
         img1 = cv2.imread('pictures/DB/ ({}).png'.format(j))
-
-        # Initiate SIFT detector
-        sift =  cv2.ORB_create()
-
-        # BFMatcher with default params
-        bf = cv2.BFMatcher()
-        # find the keypoints and descriptors with SIFT
         kp1, des1 = sift.detectAndCompute(img1,None)
-        kp2, des2 = sift.detectAndCompute(img2,None)
 
-        index_params= dict(algorithm = 6,
-                     table_number = 6,
-                     key_size = 12,
-                     multi_probe_level = 1)
+        matches = flann.knnMatch(des1,des2,k=2)
 
-        search_params = dict(checks=500)   # or pass empty dictionary
-
-        flann = cv2.FlannBasedMatcher(index_params,search_params)
-        matches = flann.knnMatch(des1,des2,2)
-
+        # Need to draw only good matches, so create a mask
+        matchesMask = [[0,0] for i in range(len(matches))]
+        size =0
+        # ratio test as per Lowe's paper
         good = []
         # ratio test as per Lowe's paper
         for m in matches:
             if len(m) > 0 and m[0].distance < 0.7*m[-1].distance:
                 good.append(m[0])
-        if len(parameters) < 3:
-            parameters.append([len(good), j])
-        else:
-            parameters = sorted(parameters, key = lambda x:x[0])
-            if parameters[0][0] < len(good):
-                parameters[0] = [len(good), j]
+        parameters.append([len(good), j])
 
-        # print(size)
-
-
-        # draw_params = dict(matchColor = (0,255,0),
-        #                    singlePointColor = (255,0,0),
-        #                    matchesMask = matchesMask,
-        #                    flags = 0)
-        #
-        # img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,matches,None,**draw_params)
-
-        # plt.imshow(img3,),plt.show()
+    parameters = sorted(parameters, key = lambda x:x[0])
+    parameters = parameters[-20:]
     print(parameters)
         # cv2.imshow("Img1", img1)
         # cv2.imshow("Img2", img2)
@@ -290,13 +277,7 @@ def clean_pic(i, img):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.erode(gray, kernel, iterations=1)
     elif i == 5:
-        scale_percent = 60
-        width = int(img.shape[1] * scale_percent / 100)
-        height = int(img.shape[0] * scale_percent / 100)
-        dim = (width, height)
-        # resize image
-        img = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
-
+        img = img[0:90, 0:150]
         # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # img = cv2.dilate(gray, kernel, iterations=1)
     cv2.imshow("n", img)
@@ -306,11 +287,11 @@ def clean_pic(i, img):
 def activate_ex3():
     small_images = []
     large_images = []
-    # for i in range(1,6):
-    path = 'pictures/q3/00031_5.png'
-    small_img = cv2.imread(path)
-    small_img = clean_pic(5, small_img)
-    large_img = find_image_in_db(small_img)
+    for i in range(1,6):
+        path = 'pictures/q3/00031_{}.png'.format(i)
+        small_img = cv2.imread(path)
+        small_img = clean_pic(i, small_img)
+        large_img = find_image_in_db(small_img)
     # small_images.append(path)
     # large_images.append(large_img)
     # cv2.imshow("large", large_img)
