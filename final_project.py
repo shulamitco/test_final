@@ -201,60 +201,74 @@ def find_the_right_pic(small_image, large_image):
     return large_image, round(max_val/min_val,2)
 
 
-def find_accuracy():
-    pass
+def sift_image(img1, img2):
 
+    # Initiate SIFT detector
+    # sift = cv2.SIFT()
 
-def find_image_in_db(img2):
+    sift = cv2.ORB_create()
 
-    max_p = 0
-    parameters = []
-    sift =  cv2.ORB_create()
-    bf = cv2.BFMatcher()
+    # find the keypoints and descriptors with SIFT
+    kp1, des1 = sift.detectAndCompute(img1,None)
     kp2, des2 = sift.detectAndCompute(img2,None)
-    index_params= dict(algorithm = 6,
-                             table_number = 6,
-                             key_size = 12,
-                             multi_probe_level = 1)
 
-    search_params = dict(checks=500)   # or pass empty dictionary
+    # BFMatcher with default params
+    bf = cv2.BFMatcher()
+    matches = bf.knnMatch(des1, des2, k=2)
 
-    flann = cv2.FlannBasedMatcher(index_params,search_params)
+    # Apply ratio test
+
+    good = []
+    for m, n in matches:
+        if m.distance < 0.75*n.distance:
+            good.append([m])
+
+
+    # cv2.drawMatchesKnn expects list of lists as matches.
+
+    # img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,flags=2)
+    #
+    # plt.imshow(img3),plt.show()
+    # print(good)
+    # print(len(good))
+
+    return len(good)
+
+
+
+def find_image_in_db(small_img):
+    gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
+    org_s_img = np.copy(gray)
+
+    # kernel = np.ones((3, 3), np.uint8)
+    # gray = cv2.dilate(gray, kernel, iterations=1)
+    # gray = cv2.erode(gray, kernel, iterations=1)
+
+    # image sharpener
+    kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+    gray = cv2.filter2D(gray, -1, kernel)
+
+
+    """
+    good code
+    """
+    list_mach = []
+    list_index = []
+    # pass over the db of all images
+    # for c_img in os.listdir('DB'):
     images = [cv2.imread(file) for file in glob.glob("pictures/DB/*.png")]
 
-    for j, img1 in enumerate(images):
+    for i, large_img in enumerate(images):
+        num_much = sift_image(gray.astype(np.uint8), large_img.astype(np.uint8))
+        list_mach.append(num_much)
+        list_index.append(i)
 
-        # Read the images from the file
-        kp1, des1 = sift.detectAndCompute(img1,None)
-
-        matches = flann.knnMatch(des1,des2,k=2)
-
-        # Need to draw only good matches, so create a mask
-        matchesMask = [[0,0] for i in range(len(matches))]
-        size =0
-        # ratio test as per Lowe's paper
-        good = []
-        # ratio test as per Lowe's paper
-        for m in matches:
-            if len(m) > 0 and m[0].distance < 0.7*m[-1].distance:
-                good.append(m[0])
-        parameters.append([len(good), j])
-
-    parameters = sorted(parameters, key = lambda x:x[0])
-    parameters = parameters[-20:]
-    print(parameters)
-        # cv2.imshow("Img1", img1)
-        # cv2.imshow("Img2", img2)
-        # plt.subplot(1,3,1), plt.imshow(img1)
-        # plt.xticks([]),plt.yticks([])
-        #
-        # plt.subplot(1,3,2), plt.imshow(img2)
-        # plt.xticks([]),plt.yticks([])
-        #
-        # plt.subplot(1,3,3), plt.imshow(matching_result)
-        # plt.xticks([]),plt.yticks([])
-        # plt.show()
-
+    max_match = max(list_mach)
+    max_matches = [i for i, x in enumerate(list_mach) if x == max_match]
+    print(max_matches)
+    for m in max_matches:
+        plt.subplot(121), plt.imshow(images[m], cmap='gray'), plt.title('cut')
+        plt.show()
 
 
 
@@ -290,7 +304,7 @@ def activate_ex3():
     large_images = []
     images = [cv2.imread(file) for file in glob.glob("pictures/q3/*.png")]
     for i, small_img in enumerate(images):
-        small_img = clean_pic(i, small_img)
+        # small_img = clean_pic(i, small_img)
         large_img = find_image_in_db(small_img)
     # small_images.append(path)
     # large_images.append(large_img)
