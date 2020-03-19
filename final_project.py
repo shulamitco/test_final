@@ -1,3 +1,5 @@
+import glob
+
 import cv2
 import imagehash
 import numpy as np
@@ -140,9 +142,8 @@ def activate_ex1():
         plt.xticks([]),plt.yticks([])
     plt.show()
 
-def find_circles(picture_path):
+def find_circles(src):
     # Loads an image
-    src = cv2.imread(cv2.samples.findFile(picture_path), cv2.IMREAD_COLOR)
     kernel = np.ones((3,3),np.uint8)
     src = cv2.erode(src, kernel, iterations=1)
     src = cv2.dilate(src, kernel, iterations=1)
@@ -150,7 +151,6 @@ def find_circles(picture_path):
     # Check if image is loaded fine
     if src is None:
         print ('Error opening image!')
-        print ('Usage: hough_circle.py [image_name -- default ' + picture_path + '] \n')
         return -1
 
 
@@ -176,9 +176,10 @@ def find_circles(picture_path):
     return 0
 
 def activate_ex2():
-     for i in range(31,46):
-        ex2_pic_path = 'pictures/q2/000{}.png'.format(i)
-        find_circles(ex2_pic_path)
+    images = [cv2.imread(file) for file in glob.glob("pictures/q2/*.png")]
+
+    for img in images:
+        find_circles(img)
 
 
 def find_the_right_pic(small_image, large_image):
@@ -219,11 +220,11 @@ def find_image_in_db(img2):
     search_params = dict(checks=500)   # or pass empty dictionary
 
     flann = cv2.FlannBasedMatcher(index_params,search_params)
+    images = [cv2.imread(file) for file in glob.glob("pictures/DB/*.png")]
 
-    for j in range(1,1176):
+    for j, img1 in enumerate(images):
 
         # Read the images from the file
-        img1 = cv2.imread('pictures/DB/ ({}).png'.format(j))
         kp1, des1 = sift.detectAndCompute(img1,None)
 
         matches = flann.knnMatch(des1,des2,k=2)
@@ -287,9 +288,8 @@ def clean_pic(i, img):
 def activate_ex3():
     small_images = []
     large_images = []
-    for i in range(1,6):
-        path = 'pictures/q3/00031_{}.png'.format(i)
-        small_img = cv2.imread(path)
+    images = [cv2.imread(file) for file in glob.glob("pictures/q3/*.png")]
+    for i, small_img in enumerate(images):
         small_img = clean_pic(i, small_img)
         large_img = find_image_in_db(small_img)
     # small_images.append(path)
