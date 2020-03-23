@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 from math import hypot
 from itertools import combinations
 
+from skimage.measure import compare_ssim
+
 
 def distance(p1,p2):
     """Euclidean distance between two points."""
@@ -158,7 +160,8 @@ def find_circles(src):
     gray = cv2.medianBlur(gray, 3)
     rows = gray.shape[0]
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, rows / 8,param1=45, param2=60 ,minRadius=6, maxRadius=50)
-
+    if circles is None:
+        return None
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
@@ -201,7 +204,7 @@ def find_the_right_pic(small_image, large_image):
     return large_image, round(max_val/min_val,2)
 
 
-def sift_image(img1, img2):
+def sift_image(rate,img1, img2):
 
     # Initiate SIFT detector
     # sift = cv2.SIFT()
@@ -220,7 +223,7 @@ def sift_image(img1, img2):
 
     good = []
     for m, n in matches:
-        if m.distance < 0.75*n.distance:
+        if m.distance < rate * n.distance:
             good.append([m])
 
 
@@ -236,7 +239,7 @@ def sift_image(img1, img2):
 
 
 
-def find_image_in_db(small_img):
+def find_image_in_db(rate, small_img):
     gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
     org_s_img = np.copy(gray)
 
@@ -244,32 +247,84 @@ def find_image_in_db(small_img):
     # gray = cv2.dilate(gray, kernel, iterations=1)
     # gray = cv2.erode(gray, kernel, iterations=1)
 
-    # image sharpener
-    kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
-    gray = cv2.filter2D(gray, -1, kernel)
+    # # image sharpener
+    # kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+    # gray = cv2.filter2D(gray, -1, kernel)
 
 
     """
     good code
     """
-    list_mach = []
+    list_match = []
     list_index = []
     # pass over the db of all images
     # for c_img in os.listdir('DB'):
     images = [cv2.imread(file) for file in glob.glob("pictures/DB/*.png")]
-
     for i, large_img in enumerate(images):
-        num_much = sift_image(gray.astype(np.uint8), large_img.astype(np.uint8))
-        list_mach.append(num_much)
-        list_index.append(i)
+        num_much = sift_image(rate, gray.astype(np.uint8), large_img.astype(np.uint8))
+        list_match.append([num_much,i])
 
-    max_match = max(list_mach)
-    max_matches = [i for i, x in enumerate(list_mach) if x == max_match]
-    print(max_matches)
-    for m in max_matches:
-        plt.subplot(121), plt.imshow(images[m], cmap='gray'), plt.title('cut')
-        plt.show()
+    list_match = sorted(list_match, key=lambda x:x[0])
+    list_match = list_match[-100:]
+    # for i in list_match:
+    #     plt.imshow(images[i[1]])
+    #     plt.show()
+    print(list_match)
+    return [x[1] for x in list_match]
 
+def ex33(img2):
+    max_p = 0
+    parameters = []
+    images = [cv2.imread(file) for file in glob.glob("pictures/DB/*.png")]
+
+
+    for j, img1 in enumerate(images):
+        if j ==260:
+            plt.imshow(img1)
+            plt.show()
+        sift = cv2.ORB_create()
+        bf = cv2.BFMatcher()
+        kp2, des2 = sift.detectAndCompute(img2,None)
+        index_params= dict(algorithm = 6,
+                                 table_number = 6,
+                                 key_size = 12,
+                                 multi_probe_level = 1)
+
+        search_params = dict(checks=500)   # or pass empty dictionary
+        # Read the images from the file
+        img1 = cv2.imread('pictures/DB/ ({}).png'.format(j))
+        kp1, des1 = sift.detectAndCompute(img1,None)
+
+        flann = cv2.FlannBasedMatcher(index_params,search_params)
+        matches = flann.knnMatch(des1,des2,k=2)
+
+        # Need to draw only good matches, so create a mask
+        matchesMask = [[0,0] for i in range(len(matches))]
+        size =0
+        # ratio test as per Lowe's paper
+        good = []
+        # ratio test as per Lowe's paper
+        for m in matches:
+            if len(m) > 0 and m[0].distance < 0.7*m[-1].distance:
+                good.append(m[0])
+        # print(size)
+
+        parameters.append([len(good), j])
+
+        # draw_params = dict(matchColor = (0,255,0),
+        #                    singlePointColor = (255,0,0),
+        #                    matchesMask = matchesMask,
+        #                    flags = 0)
+        #
+        # img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,matches,None,**draw_params)
+
+        # plt.imshow(img3,),plt.show()
+    parameters = sorted(parameters, key = lambda x:x[0])
+    parameters = parameters[-100:]
+    print(parameters)
+
+            # cv2.imshow("Img1", img1)
+            # cv2.imshow("Img2", img2)
 
 
 def clean_frame(thresh):
@@ -284,28 +339,69 @@ def clean_pic(i, img):
     x,y,w,h = clean_frame(thresh)
     crop = img[y:y+h,x:x+w]
     img = cv2.medianBlur(crop,3)
-    kernel = np.ones((3,3),np.uint8)
-    if i == 2:
-        img = img[35:195, 40:170]
-    elif i == 4:
-        # img = img[25:195, 70:195]
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.erode(gray, kernel, iterations=1)
-    elif i == 5:
-        img = img[0:90, 0:150]
-        # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # img = cv2.dilate(gray, kernel, iterations=1)
-    cv2.imshow("n", img)
-    cv2.waitKey()
+
+    if i == 1:
+        img = img[30:, 30:]
+    elif i == 4 or i == 2:
+        mask = img.copy()
+        _,mask = cv2.threshold(mask,0,255,cv2.THRESH_BINARY_INV)
+        mask = cv2.cvtColor(mask,cv2.COLOR_BGR2GRAY)
+        img = cv2.inpaint(img,mask,3,cv2.INPAINT_TELEA)
+        # img = cv2.medianBlur(img,5)
+        # _,mask = cv2.threshold(mask,155,255,cv2.THRESH_BINARY)
+
+        plt.imshow(img), plt.show()
+
     return img
+
+
+
+def check_for_circle(src):
+     # Loads an image
+    kernel = np.ones((3,3),np.uint8)
+    src = cv2.erode(src, kernel, iterations=1)
+    src = cv2.dilate(src, kernel, iterations=1)
+
+    # Check if image is loaded fine
+    if src is None:
+        print ('Error opening image!')
+        return -1
+
+
+    gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    gray = cv2.medianBlur(gray, 3)
+    rows = gray.shape[0]
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, rows / 8,param1=45, param2=60 ,minRadius=6, maxRadius=50)
+    if circles is None:
+        return False
+    return True
+
+def clean_db(images):
+    return [img for img in images if check_for_circle(img) == False]
+
+
+def get_rate(i):
+    if i == 0:
+        return 0.75#v no blur
+    elif i == 1:
+        return 0.3
+    elif i == 2:
+        return 0.6#v no blur
+    elif i == 3:
+        return 0.6 #v blure
+    elif i == 4:
+        return 0.5
+
 
 def activate_ex3():
     small_images = []
     large_images = []
     images = [cv2.imread(file) for file in glob.glob("pictures/q3/*.png")]
     for i, small_img in enumerate(images):
-        # small_img = clean_pic(i, small_img)
-        large_img = find_image_in_db(small_img)
+        if  i ==4:
+            rate = get_rate(i)
+            small_img = clean_pic(i, small_img)
+            img_list = find_image_in_db(rate, small_img)
     # small_images.append(path)
     # large_images.append(large_img)
     # cv2.imshow("large", large_img)
