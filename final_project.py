@@ -188,6 +188,7 @@ def activate_ex2():
 def find_the_right_pic(small_image, large_image):
     method = cv2.TM_SQDIFF_NORMED
 
+
     result = cv2.matchTemplate(small_image, large_image, method)
 
     # We want the minimum squared difference
@@ -197,11 +198,11 @@ def find_the_right_pic(small_image, large_image):
     MPx,MPy = min_loc
 
     # Step 2: Get the size of the template. This is the same size as the match.
-    trows,tcols = small_image.shape[:2]
+    trows, tcols = small_image.shape[:2]
 
     # Step 3: Draw the rectangle on large_image
     cv2.rectangle(large_image, (MPx,MPy),(MPx+tcols,MPy+trows),(0,0,255),2)
-    return large_image, round(max_val/min_val,2)
+    return large_image,max_val
 
 
 def sift_image(rate,img1, img2):
@@ -248,8 +249,7 @@ def find_image_in_db(rate, small_img):
     # gray = cv2.erode(gray, kernel, iterations=1)
 
     # # image sharpener
-    # kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
-    # gray = cv2.filter2D(gray, -1, kernel)
+    #
 
 
     """
@@ -265,12 +265,13 @@ def find_image_in_db(rate, small_img):
         list_match.append([num_much,i])
 
     list_match = sorted(list_match, key=lambda x:x[0])
-    list_match = list_match[-100:]
+    list_match = list_match[-30:]
+    # list_match = reversed(list_match)
     # for i in list_match:
     #     plt.imshow(images[i[1]])
     #     plt.show()
     print(list_match)
-    return [x[1] for x in list_match]
+    return [images[x[1]] for x in list_match]
 
 def ex33(img2):
     max_p = 0
@@ -339,22 +340,41 @@ def clean_pic(i, img):
     x,y,w,h = clean_frame(thresh)
     crop = img[y:y+h,x:x+w]
     img = cv2.medianBlur(crop,3)
-
+    if i == 3:
+        kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        img = cv2.filter2D(img, -1, kernel)
     if i == 1:
         img = img[30:, 30:]
+        kernel = np.ones((3,3),np.uint8)
+
+        # plt.imshow(img), plt.show()
     elif i == 4 or i == 2:
         mask = img.copy()
         _,mask = cv2.threshold(mask,0,255,cv2.THRESH_BINARY_INV)
         mask = cv2.cvtColor(mask,cv2.COLOR_BGR2GRAY)
         img = cv2.inpaint(img,mask,3,cv2.INPAINT_TELEA)
+        # kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        # img = cv2.filter2D(img, -1, kernel)
         # img = cv2.medianBlur(img,5)
-        # _,mask = cv2.threshold(mask,155,255,cv2.THRESH_BINARY)
-
-        plt.imshow(img), plt.show()
 
     return img
 
+def check_match(small_image, images):
+    pic, rate = None, 0
+    for i, large_image in enumerate(images):
+        # Read the images from the file
+        if small_image.shape[1] > large_image.shape[1]:
+            small_image = small_image[0:small_image.shape[0], 0:large_image.shape[1]]
+        found_img, rate_val = find_the_right_pic(small_image,large_image)
+        # plt.imshow(large_image)
+        # plt.title(i)
+        # plt.show()
+        print("{} - {}".format(i,rate_val))
+        if rate_val > rate:
+            pic = found_img
+            rate = rate_val
 
+    return pic
 
 def check_for_circle(src):
      # Loads an image
@@ -390,7 +410,7 @@ def get_rate(i):
     elif i == 3:
         return 0.6 #v blure
     elif i == 4:
-        return 0.5
+        return 0.9
 
 
 def activate_ex3():
@@ -398,14 +418,26 @@ def activate_ex3():
     large_images = []
     images = [cv2.imread(file) for file in glob.glob("pictures/q3/*.png")]
     for i, small_img in enumerate(images):
-        if  i ==4:
+        if i == 4:
             rate = get_rate(i)
-            small_img = clean_pic(i, small_img)
-            img_list = find_image_in_db(rate, small_img)
-    # small_images.append(path)
+            small_img = clean_pic(i, small_img.copy())
+
+            _, temp = cv2.threshold(small_img,155,255,cv2.THRESH_BINARY)# 4 works for 155
+
+            img_list = find_image_in_db(rate, temp)
+            if i == 4:
+                # small_img = small_img[125:, 70:]
+                plt.imshow(small_img), plt.show()
+                pic = check_match(small_img, img_list)
+                # plt.imshow(small_img), plt.show()
+                if pic is not None:
+                    plt.imshow(pic), plt.show()
+
+    # small_images.a`   1ppend(path)
     # large_images.append(large_img)
-    # cv2.imshow("large", large_img)
+    # cv2.imshow("large", large_img) nb  bv c dg
     # cv2.waitKey()
+
 
 
 def activate_ex4():
