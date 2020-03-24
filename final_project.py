@@ -221,44 +221,72 @@ def sift_image(sift,bf,img1, img2):
 
 
 
-def find_image_in_db(small_img):
+def find_image_in_db(small_img, images):
     gray = cv2.cvtColor(small_img, cv2.COLOR_BGR2GRAY)
-    max_match = 0
-    index_img = 0
+    matches = []
+    index_img = []
     sift = cv2.xfeatures2d.SIFT_create()
     bf = cv2.BFMatcher()
-    images = [cv2.imread(file) for file in glob.glob("pictures/DB/*.png")]
+
     for i, large_img in enumerate(images):
         num_much = sift_image(sift, bf, gray.astype(np.uint8), large_img.astype(np.uint8))
-        if max_match<num_much:
-            max_match = num_much
-            index_img = i
-    return images[index_img]
+        matches.append([num_much, i])
+
+    matches = sorted(matches, key=lambda x:x[0])
+    index = matches[-1][1]
+    return images[index]
 
 
 
 def activate_ex3():
     small_images = [cv2.imread(file) for file in glob.glob("pictures/q3/*.png")]
+    images = [cv2.imread(file) for file in glob.glob("pictures/DB/*.png")]
     for i, small_img in enumerate(small_images):
-            org_pic = find_image_in_db(small_img)
+            org_pic = find_image_in_db(small_img, images)
             plt.subplot(1, 2, 1), plt.imshow(small_img,'gray')
             plt.subplot(1, 2, 2), plt.imshow(org_pic,'gray')
             plt.show()
 
+def clean_pic(pic):
+    kernel = np.ones((3,3),np.uint8)
+    _, pic = cv2.threshold(pic,109,255,cv2.THRESH_BINARY)
+    return pic
 
-def clean_pic2(pic2):
-    pass
+
+def find_circles2(src):
+     # Loads an image
+    org = src.copy()
+    src = clean_pic(src)
+    gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    rows = gray.shape[0]
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, rows / 8,param1=35, param2=35 ,minRadius=7, maxRadius=50)
+
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        for i in circles[0, :]:
+            center = (i[0], i[1])
+            # circle center
+            cv2.circle(org, center, 1, (0, 100, 100), 3)
+            # circle outline
+            radius = i[2]
+            cv2.circle(org, center, 25, (255, 0, 255), 3)
+
+
+
+    return org
+
+
 
 
 def activate_ex4():
     pic1 = cv2.imread('pictures/q4/00009.JPG')
     pic2 = cv2.imread('pictures/q4/00108.JPG')
-    pic2 = clean_pic2(pic2)
-    pic1_with_circles = find_circles(pic1)
+    org = pic1.copy()
+    pic1_with_circles = find_circles2(org)
     pic2_with_circles = find_circles(pic2)
     plt.subplot(2, 2, 1), plt.imshow(pic1,'gray')
-    plt.subplot(2, 2, 2), plt.imshow(pic1_with_circles,'gray')
-    plt.subplot(2, 2, 3), plt.imshow(pic2,'gray')
+    plt.subplot(2, 2, 3), plt.imshow(pic1_with_circles,'gray')
+    plt.subplot(2, 2, 2), plt.imshow(pic2,'gray')
     plt.subplot(2, 2, 4), plt.imshow(pic2_with_circles,'gray')
     plt.show()
 
@@ -267,5 +295,5 @@ if __name__ == '__main__':
 
     # activate_ex1()
     # activate_ex2()
-    activate_ex3()
-    # activate_ex4()
+    # activate_ex3()
+    activate_ex4()
