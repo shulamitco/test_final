@@ -26,7 +26,6 @@ def sift_image(bf, des2, des1):
     matches = bf.knnMatch(des1, des2, k=2)
 
     # Apply ratio test
-
     good = []
     for m, n in matches:
         if m.distance < 0.75 * n.distance:
@@ -39,6 +38,7 @@ def find_image_in_db(bf,images_len,critical_points, des_small_img):
     max_match, index_img = 0, 0
 
     for i in range(images_len):
+        # return the image with the maximum match
         matches = sift_image(bf,critical_points[i], des_small_img)
         if max_match < matches:
             max_match = matches
@@ -65,6 +65,7 @@ def activate_ex3():
         kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
         small_img = cv2.filter2D(small_img_org, -1, kernel)
         kp, des_small_img = sift.detectAndCompute(small_img,None)
+        #shows image with the recognized footprint
         org_pic = images[find_image_in_db(bf, len(images), critical_points_db, des_small_img)]
         plt.subplot(1, 2, 1), plt.imshow(small_img_org,'gray')
         plt.xticks([]),plt.yticks([])

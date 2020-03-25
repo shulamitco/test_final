@@ -8,6 +8,7 @@ def activate_ex2():
         pic = find_circles(img)
         final.append(pic)
 
+    # shows all the images with the marked circles
     for i in range(0,len(final),3):
         plt.subplot(1,3,1), plt.imshow(final[i], 'gray')
         plt.xticks([]),plt.yticks([])

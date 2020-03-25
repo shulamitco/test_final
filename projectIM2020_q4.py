@@ -9,8 +9,10 @@ def find_circles2(src):
 
     gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     rows = gray.shape[0]
+    # find circles in the image
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, rows / 8,param1=35, param2=35 ,minRadius=7, maxRadius=50)
 
+    # draw the circles in the image
     if circles is not None:
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:
@@ -29,6 +31,7 @@ def activate_ex4():
     org = pic1.copy()
     pic1_with_circles = find_circles2(org)
     pic2_with_circles = find_circles(pic2)
+    # shows images with and without the marked circles that found
     plt.subplot(1, 4, 1), plt.imshow(pic1,'gray')
     plt.xticks([]),plt.yticks([])
     plt.subplot(1, 4, 2), plt.imshow(pic1_with_circles,'gray')

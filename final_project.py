@@ -14,8 +14,10 @@ def find_circles(src):
     gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     gray = cv2.medianBlur(gray, 3)
     rows = gray.shape[0]
+    # find circles in the images
     circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, rows / 8,param1=45, param2=60 ,minRadius=6, maxRadius=50)
 
+    # draw the circles
     if circles is not None:
         circles = np.uint16(np.around(circles))
         for i in circles[0, :]:

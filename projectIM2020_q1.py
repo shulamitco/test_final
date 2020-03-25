@@ -8,6 +8,12 @@ def distance(p1,p2):
 
 
 def crop_imges_1(img):
+    # blur the img
+    # makes erode and dilate to clean the img from noises
+    # threshold to ignore big noises
+    # find the corners of the board
+    # takes the max y and the min x of the corners to find the ruler limits
+    # cut the img by the ruler limits
     org = img.copy()
     kernel = np.ones((5,5),np.uint8)
     img = cv2.medianBlur(img,5)
@@ -31,6 +37,12 @@ def crop_imges_1(img):
     return crop_img
 
 def crop_imges_2(img):
+    # blur the img
+    # makes erode and dilate to clean the img from noises
+    # threshold to ignore big noises
+    # find the corners of the board
+    # takes the max y and the min x of the corners to find the ruler limits
+    # cut the img by the ruler limits
     org = img.copy()
     img = cv2.medianBlur(img,5)
     kernel = np.ones((5,5),np.uint8)
@@ -53,6 +65,12 @@ def crop_imges_2(img):
     return crop_img
 
 def crop_imges_3(img):
+    # blur the img
+    # makes erode and dilate to clean the img from noises
+    # threshold to ignore big noises
+    # find the corners of the board
+    # takes the max y and the min x of the corners to find the ruler limits
+    # cut the img by the ruler limits
     org = img.copy()
     kernel = np.ones((5,5),np.uint8)
     img = cv2.medianBlur(img,5)
@@ -73,6 +91,8 @@ def crop_imges_3(img):
     return crop_img
 
 def draw_points(img):
+    # blur the img and clean noise by using dilate and erode
+    # and then find the corners easily and draw them
     img = img.copy()
     kernel = np.ones((5,5),np.uint8)
     img = cv2.medianBlur(img,5)
@@ -91,6 +111,8 @@ def activate_ex1():
     picture_path_4 = path+'q1_fromZira/4.JPG'
     picture_path_12 = path+'q1_fromZira/12.JPG'
     picture_path_13 = path+'q1_fromZira/13.JPG'
+
+    # cut the rulers from all the images
     img = cv2.imread(picture_path_4)
     org1 = img.copy()
     crop_img1 = crop_imges_1(img)
@@ -98,6 +120,7 @@ def activate_ex1():
     org2 = img2.copy()
     crop_img2 = crop_imges_2(img2)
 
+    # draw points in the mini chess board in the rulers of all the images
     img3 = cv2.imread(picture_path_13)
     org3 = img3.copy()
     crop_img3 = crop_imges_3(img3)
@@ -110,6 +133,7 @@ def activate_ex1():
     titles = ["org", "pointed", "crop img"]
     pictures = [org1, img, crop_img1]
 
+    # shows all the images changes include the original for img 1
     for i, pic in enumerate(pictures):
         plt.subplot(1,3,i+1),plt.imshow(pic)
         plt.title(titles[i])
@@ -119,6 +143,7 @@ def activate_ex1():
     titles2 = ["org", "pointed", "crop img"]
     pictures2 = [org2, img2, crop_img2]
 
+    # shows all the images changes include the original for img 2
     for i, pic in enumerate(pictures2):
         plt.subplot(1,3,i+1),plt.imshow(pic)
         plt.title(titles2[i])
@@ -127,6 +152,7 @@ def activate_ex1():
     titles3 = ["org", "pointed", 'crop']
     pictures3 = [org3, img3, crop_img3]
 
+    # shows all the images changes include the original for img 3
     for i,pic in enumerate(pictures3):
         plt.subplot(1,3,i+1),plt.imshow(pic, 'gray')
         plt.title(titles3[i])
