@@ -67,7 +67,9 @@ def activate_ex3():
         kp, des_small_img = sift.detectAndCompute(small_img,None)
         org_pic = images[find_image_in_db(bf, len(images), critical_points_db, des_small_img)]
         plt.subplot(1, 2, 1), plt.imshow(small_img_org,'gray')
+        plt.xticks([]),plt.yticks([])
         plt.subplot(1, 2, 2), plt.imshow(org_pic,'gray')
+        plt.xticks([]),plt.yticks([])
         plt.show()
 
 if __name__ == '__main__':
